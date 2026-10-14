@@ -1,0 +1,14 @@
+# 依赖与本地产物
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# 私密/本地文件（绝不入库）
+out/
+bp_bindkey.hex
+auth.json
+*.log
+
+# 系统
+.DS_Store

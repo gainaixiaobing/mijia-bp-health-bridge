@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd 自启模板（米家血压计桥接守护进程）
+
+  使用前替换三个占位符:
+    __PYTHON__  → Python 解释器绝对路径（建议 venv，如 /Users/you/venv/bin/python）
+    __SCRIPT__  → bpx1_daemon.py 的绝对路径
+    __LOG__     → 日志文件路径（如 /Users/you/mijia-bp-health-bridge/out/daemon.log）
+
+  安装:
+    cp com.mijia.bpx1scan.plist.template ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
+    （编辑为实际路径后）
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
+
+  卸载:
+    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
+
+  注意: 环境变量（BPX1_BINDKEY 等）默认不会带入 launchd；
+        推荐把 bindkey 写入仓库根目录 bp_bindkey.hex（脚本自动读取），
+        或在下面的 EnvironmentVariables 段显式声明。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.mijia.bpx1scan</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>-u</string>
+        <string>__SCRIPT__</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>__LOG__</string>
+    <key>StandardErrorPath</key>
+    <string>__LOG__</string>
+    <!-- 如不使用 bp_bindkey.hex，可在此声明环境变量：
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>BPX1_MAC</key>
+        <string>8C:D0:B2:xx:xx:xx</string>
+        <key>BPX1_BINDKEY</key>
+        <string>YOUR_32_HEX_BINDKEY</string>
+    </dict>
+    -->
+</dict>
+</plist>
