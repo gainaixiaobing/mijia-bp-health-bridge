@@ -1,53 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  launchd 自启模板（米家血压计桥接守护进程）
+  launchd 配置模板（由 scripts/install.sh 渲染，一般不需要手工编辑）
 
-  使用前替换三个占位符:
-    __PYTHON__  → Python 解释器绝对路径（建议 venv，如 /Users/you/venv/bin/python）
-    __SCRIPT__  → bpx1_daemon.py 的绝对路径
-    __LOG__     → 日志文件路径（如 /Users/you/mijia-bp-health-bridge/out/daemon.log）
+  占位符:
+    __PYTHON__       虚拟环境里的 python 解释器绝对路径
+    __SCRIPT__       scripts/bpx1_daemon.py 的绝对路径
+    __LOG__          launchd 捕获的 stdout/stderr（只用来接异常栈）
+    __ENVIRONMENT__  EnvironmentVariables 段（安装脚本按 BPX1_* 环境变量生成）
 
-  安装:
-    cp com.mijia.bpx1scan.plist.template ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
-    （编辑为实际路径后）
-    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
+  说明:
+    - 日常日志由守护进程自己写 out/daemon.log（按 5MB 轮转，保留 3 份），
+      这里只兜底崩溃栈，正常运行时基本是空的；
+    - KeepAlive 用 SuccessfulExit=false：只在异常退出时重启，
+      正常退出（比如手动 bootout）不会被反复拉起；
+    - 配置缺失（bindkey/MAC/iCloud）时守护进程不会退出，而是打 ERROR 日志
+      并每 5 分钟重试，所以不会出现"10 秒重启一次"的风暴。
 
-  卸载:
-    launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.mijia.bpx1scan.plist
-
-  注意: 环境变量（BPX1_BINDKEY 等）默认不会带入 launchd；
-        推荐把 bindkey 写入仓库根目录 bp_bindkey.hex（脚本自动读取），
-        或在下面的 EnvironmentVariables 段显式声明。
+  常用命令:
+    launchctl print gui/$(id -u)/com.mijia.bpx1scan     # 看状态
+    launchctl kickstart -k gui/$(id -u)/com.mijia.bpx1scan  # 重启
+    launchctl bootout gui/$(id -u)/com.mijia.bpx1scan   # 停止
 -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
     <string>com.mijia.bpx1scan</string>
+
     <key>ProgramArguments</key>
     <array>
         <string>__PYTHON__</string>
         <string>-u</string>
         <string>__SCRIPT__</string>
     </array>
+
     <key>RunAtLoad</key>
     <true/>
+
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+
     <key>ThrottleInterval</key>
     <integer>10</integer>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
     <key>StandardOutPath</key>
     <string>__LOG__</string>
     <key>StandardErrorPath</key>
     <string>__LOG__</string>
-    <!-- 如不使用 bp_bindkey.hex，可在此声明环境变量：
-    <key>EnvironmentVariables</key>
-    <dict>
-        <key>BPX1_MAC</key>
-        <string>8C:D0:B2:xx:xx:xx</string>
-        <key>BPX1_BINDKEY</key>
-        <string>YOUR_32_HEX_BINDKEY</string>
-    </dict>
-    -->
+
+    <!-- 由 scripts/install.sh 按 BPX1_MAC / BPX1_INBOX 等环境变量替换 -->
+__ENVIRONMENT__
 </dict>
 </plist>
