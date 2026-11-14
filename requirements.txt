@@ -1,0 +1,3 @@
+# 运行时依赖：BLE 扫描 + AES-CCM
+bleak>=0.22
+cryptography>=41
